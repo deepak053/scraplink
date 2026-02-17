@@ -1,7 +1,27 @@
-import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Recycle, Mail, Phone, MapPin } from 'lucide-react';
 
 export function Footer() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const scrollToSection = (sectionId: string) => {
+    if (location.pathname !== '/') {
+      navigate('/');
+      setTimeout(() => {
+        const element = document.getElementById(sectionId);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+    } else {
+      const element = document.getElementById(sectionId);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  };
+
   return (
     <footer className="bg-gray-900 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -12,7 +32,7 @@ export function Footer() {
               <span className="text-xl font-bold">SCRAP LINK</span>
             </div>
             <p className="text-gray-300 mb-4 max-w-md">
-              Connecting local sellers and recyclers to create a sustainable future. 
+              Connecting local sellers and recyclers to create a sustainable future.
               Trade metal scraps efficiently with our smart platform.
             </p>
             <div className="flex space-x-4">
@@ -29,7 +49,7 @@ export function Footer() {
             <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
             <ul className="space-y-2">
               <li>
-                <button 
+                <button
                   onClick={() => scrollToSection('features')}
                   className="text-gray-300 hover:text-green-400 transition-colors"
                 >
@@ -37,7 +57,7 @@ export function Footer() {
                 </button>
               </li>
               <li>
-                <button 
+                <button
                   onClick={() => scrollToSection('about')}
                   className="text-gray-300 hover:text-green-400 transition-colors"
                 >
@@ -45,7 +65,7 @@ export function Footer() {
                 </button>
               </li>
               <li>
-                <button 
+                <button
                   onClick={() => scrollToSection('contact')}
                   className="text-gray-300 hover:text-green-400 transition-colors"
                 >
