@@ -45,88 +45,88 @@ const HIERARCHY: Hierarchy = {
 
   "e waste": {
     "Computing Devices": [
-      "Laptop - Basic Laptop","Laptop - Gaming Laptop","Laptop - Ultrabook","Laptop - MacBook","Laptop - Chromebook",
-      "Laptop Motherboard","Laptop RAM","Laptop Battery","Laptop Display Panel","Laptop Charger",
-      "Desktop - Office Desktop","Desktop - Gaming Desktop","Desktop - All-in-One PC","CPU Cabinet",
-      "Motherboard (Low Grade)","Motherboard (High Grade)","RAM DDR3","RAM DDR4","Hard Disk Drive","Solid State Drive",
-      "Graphic Card (GPU)","SMPS Unit","Cooling Fan","Heatsink",
-      "Monitor - LED Monitor","Monitor - LCD Monitor","Monitor - CRT Monitor",
-      "Keyboard - Mechanical Keyboard","Keyboard - Membrane Keyboard","Keyboard - Wireless Keyboard",
-      "Mouse (Optical)","Mouse (Wired)","Mouse (Wireless)",
-      "Printer - Inkjet Printer","Printer - Laser Printer","Printer - Dot Matrix Printer","Printer PCB","Scanner",
-      "UPS - Small UPS","UPS - Office UPS","UPS with Battery","SMPS Board",
+      "Laptop - Basic Laptop", "Laptop - Gaming Laptop", "Laptop - Ultrabook", "Laptop - MacBook", "Laptop - Chromebook",
+      "Laptop Motherboard", "Laptop RAM", "Laptop Battery", "Laptop Display Panel", "Laptop Charger",
+      "Desktop - Office Desktop", "Desktop - Gaming Desktop", "Desktop - All-in-One PC", "CPU Cabinet",
+      "Motherboard (Low Grade)", "Motherboard (High Grade)", "RAM DDR3", "RAM DDR4", "Hard Disk Drive", "Solid State Drive",
+      "Graphic Card (GPU)", "SMPS Unit", "Cooling Fan", "Heatsink",
+      "Monitor - LED Monitor", "Monitor - LCD Monitor", "Monitor - CRT Monitor",
+      "Keyboard - Mechanical Keyboard", "Keyboard - Membrane Keyboard", "Keyboard - Wireless Keyboard",
+      "Mouse (Optical)", "Mouse (Wired)", "Mouse (Wireless)",
+      "Printer - Inkjet Printer", "Printer - Laser Printer", "Printer - Dot Matrix Printer", "Printer PCB", "Scanner",
+      "UPS - Small UPS", "UPS - Office UPS", "UPS with Battery", "SMPS Board",
     ],
     "Mobile Devices": [
-      "Phone - Feature Phone","Phone - Smartphone (Basic)","Phone - Smartphone (Mid-Range)","Phone - Smartphone (Flagship)","Broken Phones",
-      "Mobile PCB (Low Grade)","Mobile PCB (High Grade)",
-      "Tablet - Basic Android Tablet","Tablet - Premium Tablet","iPad",
-      "Tablet Motherboard","Tablet Battery","Tablet Screen",
-      "Mobile Charger","Tablet Charger","Fast Charger","Wireless Charger","USB Cable",
-      "Earphones - Wired","Earphones - Wireless","Bluetooth Headphones","Smartwatch",
+      "Phone - Feature Phone", "Phone - Smartphone (Basic)", "Phone - Smartphone (Mid-Range)", "Phone - Smartphone (Flagship)", "Broken Phones",
+      "Mobile PCB (Low Grade)", "Mobile PCB (High Grade)",
+      "Tablet - Basic Android Tablet", "Tablet - Premium Tablet", "iPad",
+      "Tablet Motherboard", "Tablet Battery", "Tablet Screen",
+      "Mobile Charger", "Tablet Charger", "Fast Charger", "Wireless Charger", "USB Cable",
+      "Earphones - Wired", "Earphones - Wireless", "Bluetooth Headphones", "Smartwatch",
     ],
     "Home Appliances": [
-      "Refrigerator - Single Door","Refrigerator - Double Door","Refrigerator - Commercial","Refrigerator - Compressor Unit",
-      "Air Conditioner - Window AC","Air Conditioner - Split AC Indoor Unit","Air Conditioner - Split AC Outdoor Unit","AC - Compressor","AC - Copper Coil",
-      "Washing Machine - Semi-Automatic","Washing Machine - Fully Automatic","Washing Machine - Industrial","Washing Machine - Motor Unit",
-      "Microwave Oven - Small","Microwave Oven - Convection","Microwave Oven - Industrial",
-      "Water Purifier - Electric RO","Water Purifier - UV","Water Purifier - Industrial",
+      "Refrigerator - Single Door", "Refrigerator - Double Door", "Refrigerator - Commercial", "Refrigerator - Compressor Unit",
+      "Air Conditioner - Window AC", "Air Conditioner - Split AC Indoor Unit", "Air Conditioner - Split AC Outdoor Unit", "AC - Compressor", "AC - Copper Coil",
+      "Washing Machine - Semi-Automatic", "Washing Machine - Fully Automatic", "Washing Machine - Industrial", "Washing Machine - Motor Unit",
+      "Microwave Oven - Small", "Microwave Oven - Convection", "Microwave Oven - Industrial",
+      "Water Purifier - Electric RO", "Water Purifier - UV", "Water Purifier - Industrial",
     ],
     "Small Electronics": [
-      "Mixer - Mixer Grinder","Mixer - Juicer Mixer","Blender Motor","Copper Coil",
-      "Iron - Dry Iron","Iron - Steam Iron","Iron - Industrial Iron",
-      "Fan - Ceiling Fan","Fan - Table Fan","Fan - Exhaust Fan","Cooler Motor",
-      "Heater - Room Heater","Heater - Water Heater (Geyser)","Heater - Immersion Rod","Heating Coil",
-      "TV - LED TV","TV - LCD TV","TV - CRT TV","Smart TV","TV PCB Board","Remote Control",
-      "Set-Top Box - DTH Box","Set-Top Box - Cable Receiver","Set-Top Box - Smart Box","Set-Top Box - Circuit Board",
+      "Mixer - Mixer Grinder", "Mixer - Juicer Mixer", "Blender Motor", "Copper Coil",
+      "Iron - Dry Iron", "Iron - Steam Iron", "Iron - Industrial Iron",
+      "Fan - Ceiling Fan", "Fan - Table Fan", "Fan - Exhaust Fan", "Cooler Motor",
+      "Heater - Room Heater", "Heater - Water Heater (Geyser)", "Heater - Immersion Rod", "Heating Coil",
+      "TV - LED TV", "TV - LCD TV", "TV - CRT TV", "Smart TV", "TV PCB Board", "Remote Control",
+      "Set-Top Box - DTH Box", "Set-Top Box - Cable Receiver", "Set-Top Box - Smart Box", "Set-Top Box - Circuit Board",
     ],
     "Lighting Equipment": [
-      "LED Bulb - 5W","LED Bulb - 9W","Smart Bulb","Industrial Bulb",
-      "Tube Light - LED Tube","Tube Light - Fluorescent Tube","Tube Light - Industrial Tube Light",
-      "Street Light - LED Street Light","Street Light - Solar Street Light","Street Light - High Mast Light",
-      "Lamp - Desk Lamp","Lamp - Emergency Light","Lamp - Decorative Lamp",
+      "LED Bulb - 5W", "LED Bulb - 9W", "Smart Bulb", "Industrial Bulb",
+      "Tube Light - LED Tube", "Tube Light - Fluorescent Tube", "Tube Light - Industrial Tube Light",
+      "Street Light - LED Street Light", "Street Light - Solar Street Light", "Street Light - High Mast Light",
+      "Lamp - Desk Lamp", "Lamp - Emergency Light", "Lamp - Decorative Lamp",
     ],
     "Batteries": [
-      "Mobile Battery - Li-ion 2500mAh","Mobile Battery - Li-ion 4000mAh","Mobile Battery - Damaged",
-      "Laptop Battery - 3-Cell","Laptop Battery - 6-Cell","Laptop Battery - 9-Cell","Laptop Battery - Damaged Pack",
-      "UPS Battery - Lead-Acid Small","UPS Battery - Lead-Acid Large","UPS Battery - Dry Battery","UPS Battery - Tubular Battery",
-      "Power Bank - 5000mAh","Power Bank - 10000mAh","Power Bank - 20000mAh",
-      "E-Vehicle Battery - E-Bike","E-Vehicle Battery - E-Scooter","E-Vehicle Battery - Lithium Pack",
+      "Mobile Battery - Li-ion 2500mAh", "Mobile Battery - Li-ion 4000mAh", "Mobile Battery - Damaged",
+      "Laptop Battery - 3-Cell", "Laptop Battery - 6-Cell", "Laptop Battery - 9-Cell", "Laptop Battery - Damaged Pack",
+      "UPS Battery - Lead-Acid Small", "UPS Battery - Lead-Acid Large", "UPS Battery - Dry Battery", "UPS Battery - Tubular Battery",
+      "Power Bank - 5000mAh", "Power Bank - 10000mAh", "Power Bank - 20000mAh",
+      "E-Vehicle Battery - E-Bike", "E-Vehicle Battery - E-Scooter", "E-Vehicle Battery - Lithium Pack",
     ],
     "Circuit Components": [
-      "PCB - Low-Grade","PCB - Medium-Grade","PCB - High-Grade","Motherboard PCB","Mobile PCB","Server PCB","TV PCB","Mixed PCB",
-      "Copper Coil - Small","Copper Coil - Transformer Coil","Copper Coil - Motor Coil","AC Compressor Coil",
-      "RAM / IC Chips - DDR3","RAM / IC Chips - DDR4","RAM / IC Chips - DDR5","IC Processor Chips","CPU Socket Chips",
-      "Power Boards - SMPS Board","Power Boards - Inverter Board","Power Boards - Charger Board","Power Boards - PSU Board",
-      "Graphic Cards - Entry-Level GPU","Graphic Cards - Mid-Range GPU","Graphic Cards - High-End RTX GPU",
-      "Server Boards - Xeon Boards","Server Boards - Data Center Boards","Server Boards - Rack Server Board",
+      "PCB - Low-Grade", "PCB - Medium-Grade", "PCB - High-Grade", "Motherboard PCB", "Mobile PCB", "Server PCB", "TV PCB", "Mixed PCB",
+      "Copper Coil - Small", "Copper Coil - Transformer Coil", "Copper Coil - Motor Coil", "AC Compressor Coil",
+      "RAM / IC Chips - DDR3", "RAM / IC Chips - DDR4", "RAM / IC Chips - DDR5", "IC Processor Chips", "CPU Socket Chips",
+      "Power Boards - SMPS Board", "Power Boards - Inverter Board", "Power Boards - Charger Board", "Power Boards - PSU Board",
+      "Graphic Cards - Entry-Level GPU", "Graphic Cards - Mid-Range GPU", "Graphic Cards - High-End RTX GPU",
+      "Server Boards - Xeon Boards", "Server Boards - Data Center Boards", "Server Boards - Rack Server Board",
     ],
     "Industrial Equipment": [
-      "Server - Tower Server","Server - Rack Server","Server - Blade Server","Server - Server Board","Server - Power Unit",
-      "Projector - LED","Projector - DLP","Projector - LCD","Projector - Industrial",
-      "Photocopier - Office Copier","Photocopier - Heavy-Duty Copier","Photocopier - Printer-Copier Combo",
-      "Control Panel - Industrial","Control Panel - Power Distribution Panel","Control Panel - Machine Panel Board",
-      "Network Equipment - Router","Network Equipment - Switch","Network Equipment - Hub","Network Equipment - Rack Mount Unit","Network Equipment - Modem",
-      "Lab Equipment - Diagnostic Device","Lab Equipment - Analyzer","Lab Equipment - X-Ray Monitor (Non-hazardous)",
+      "Server - Tower Server", "Server - Rack Server", "Server - Blade Server", "Server - Server Board", "Server - Power Unit",
+      "Projector - LED", "Projector - DLP", "Projector - LCD", "Projector - Industrial",
+      "Photocopier - Office Copier", "Photocopier - Heavy-Duty Copier", "Photocopier - Printer-Copier Combo",
+      "Control Panel - Industrial", "Control Panel - Power Distribution Panel", "Control Panel - Machine Panel Board",
+      "Network Equipment - Router", "Network Equipment - Switch", "Network Equipment - Hub", "Network Equipment - Rack Mount Unit", "Network Equipment - Modem",
+      "Lab Equipment - Diagnostic Device", "Lab Equipment - Analyzer", "Lab Equipment - X-Ray Monitor (Non-hazardous)",
     ],
   },
 
   paper: {
     "Mixed & Office Paper": [
-      "Mixed Waste Paper","Office Paper Grade-1","Old Newspaper (ONP)","Newspaper","Magazine",
+      "Mixed Waste Paper", "Office Paper Grade-1", "Old Newspaper (ONP)", "Newspaper", "Magazine",
     ],
     "Cardboard & Packaging": [
-      "OCC (Old Corrugated Cartons)","Kraft Paper Scrap","Duplex Board Cuttings","Cardboard",
+      "OCC (Old Corrugated Cartons)", "Kraft Paper Scrap", "Duplex Board Cuttings", "Cardboard",
     ],
     "High-Grade Paper": [
-      "White Ledger Paper","Sorted Office Paper (SOP)","Printed books","Low grade paper",
+      "White Ledger Paper", "Sorted Office Paper (SOP)", "Printed books", "Low grade paper",
     ],
   },
 
   glass: {
-    "Container Glass": ["Bottles (Beer)","Bottles (Wine)","Bottles (Soft Drink)","Jars","Bottles"],
-    "Sheet Glass": ["Window Glass","Tempered Glass","Tinted Glass","Broken window"],
-    "Automotive Glass": ["Windshield","Side Windows","Rear Glass"],
-    "Broken & Mixed Glass": ["Crushed Glass","Decorative Glass Pieces","Mirror Scrap","Mirror"],
+    "Container Glass": ["Bottles (Beer)", "Bottles (Wine)", "Bottles (Soft Drink)", "Jars", "Bottles"],
+    "Sheet Glass": ["Window Glass", "Tempered Glass", "Tinted Glass", "Broken window"],
+    "Automotive Glass": ["Windshield", "Side Windows", "Rear Glass"],
+    "Broken & Mixed Glass": ["Crushed Glass", "Decorative Glass Pieces", "Mirror Scrap", "Mirror"],
   },
 };
 
@@ -151,9 +151,14 @@ export function ListScrapPage() {
   const [loading, setLoading] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [needsRecalc, setNeedsRecalc] = useState(true);
+  const [isBackendOnline, setIsBackendOnline] = useState<boolean>(true);
 
   const { profile } = useAuth();
   const navigate = useNavigate();
+
+  React.useEffect(() => {
+    pricePredictor.checkHealth().then(online => setIsBackendOnline(online));
+  }, []);
 
   const toggleCategory = (cat: string) => {
     setPredictedTotal(null);
@@ -214,7 +219,12 @@ export function ListScrapPage() {
 
       for (const item of selectedLeaves) {
         if (item.weight > 0) {
-          const res = await pricePredictor.predictPrice(item.category, item.leaf, item.weight);
+          const res = await pricePredictor.predictPrice3(
+            item.category,
+            item.subcategory,
+            item.leaf,
+            item.weight
+          );
           total += res.predictedPrice;
           updated.push({ ...item, predictedPrice: res.predictedPrice });
 
@@ -357,6 +367,18 @@ export function ListScrapPage() {
             <p className="text-gray-600">Pick category → sub-category → item, add weights, then predict.</p>
           </div>
 
+          {!isBackendOnline && (
+            <div className="mb-6 bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-lg flex items-start">
+              <Zap className="h-5 w-5 text-yellow-600 mr-2 mt-0.5" />
+              <div>
+                <h3 className="font-semibold">Price Prediction Unavailable</h3>
+                <p className="text-sm mt-1">
+                  The AI price prediction service is currently offline. You can still list your scrap, but estimated prices won't be calculated automatically.
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-3">Scrap Categories</label>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -364,11 +386,10 @@ export function ListScrapPage() {
                 <button
                   key={cat}
                   onClick={() => toggleCategory(cat)}
-                  className={`border rounded-lg p-2 capitalize font-medium transition ${
-                    selectedCategories.includes(cat)
-                      ? "bg-green-600 text-white border-green-600"
-                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
-                  }`}
+                  className={`border rounded-lg p-2 capitalize font-medium transition ${selectedCategories.includes(cat)
+                    ? "bg-green-600 text-white border-green-600"
+                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
+                    }`}
                 >
                   {cat}
                 </button>
@@ -406,11 +427,10 @@ export function ListScrapPage() {
                                 <button
                                   key={leaf}
                                   onClick={() => toggleLeaf(cat, sub, leaf)}
-                                  className={`border rounded-lg p-2 text-sm transition ${
-                                    isSel
-                                      ? "bg-green-600 text-white border-green-600"
-                                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
-                                  }`}
+                                  className={`border rounded-lg p-2 text-sm transition ${isSel
+                                    ? "bg-green-600 text-white border-green-600"
+                                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
+                                    }`}
                                 >
                                   {leaf}
                                 </button>
@@ -485,7 +505,7 @@ export function ListScrapPage() {
 
             <button
               onClick={handlePredictPrice}
-              disabled={predicting || selectedLeaves.length === 0 || needsRecalc === false}
+              disabled={predicting || selectedLeaves.length === 0 || needsRecalc === false || !isBackendOnline}
               className="mt-2 w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 flex justify-center"
             >
               {predicting ? (
@@ -499,6 +519,11 @@ export function ListScrapPage() {
                 </>
               )}
             </button>
+            {!isBackendOnline && (
+              <p className="text-center text-xs text-red-500 mt-2">
+                Backend is offline. Please try again later.
+              </p>
+            )}
           </div>
 
           <div className="mb-6">
@@ -536,7 +561,7 @@ export function ListScrapPage() {
       </div>
 
       {showSummary && <SummaryModal />}
-    </div>
+    </div >
   );
 }
 

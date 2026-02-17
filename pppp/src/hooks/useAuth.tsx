@@ -1,6 +1,8 @@
 // src/hooks/useAuth.tsx
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, ReactNode, FC } from 'react';
 import { supabase } from '../lib/supabase';
+import { logAdminAction } from '../lib/admin';
+import { sendLoginNotificationEmail } from '../lib/emailService';
 import type { User } from '@supabase/supabase-js';
 
 export interface UserProfile {
@@ -27,6 +29,8 @@ type AuthContextType = {
   signIn: (email: string, password: string) => Promise<any>;
   signInAsAdmin: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  updatePassword: (password: string) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -37,7 +41,7 @@ export const useAuth = (): AuthContextType => {
   return ctx;
 };
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -111,16 +115,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     password: string,
     userData: Omit<UserProfile, 'user_id' | 'registered_at'>
   ) => {
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) throw error;
+    // 1. Call Backend to create user and profile (bypassing RLS)
+    const backendUrl = (import.meta as any).env.VITE_RF_API_URL || "";
 
-    if (data.user) {
-      const { error: profileError } = await supabase.from('users').insert({
-        user_id: data.user.id,
-        ...userData,
-      });
-      if (profileError) throw profileError;
+    const res = await fetch(`${backendUrl}/auth/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, userData })
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || "Signup failed");
     }
+
+    // 2. Sign in to establish session on client
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
 
     return data;
   };
@@ -129,6 +140,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
+
+    // Send Login Notification Email
+    if (data.user) {
+      // Fetch profile to get the name
+      try {
+        const { data: profile } = await supabase
+          .from('users')
+          .select('name')
+          .eq('user_id', data.user.id)
+          .single();
+
+        if (profile?.name) {
+          await sendLoginNotificationEmail(email, profile.name);
+        }
+      } catch (e) {
+        console.warn('Login notification email failed:', e);
+      }
+    }
+
     return data;
   };
 
@@ -141,21 +171,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password_input: password,
       });
 
-      if (error || !data || data.length === 0) {
+      // Handle RPC errors or unexpected shapes defensively.
+      if (error) {
+        throw new Error(error.message || 'Admin RPC error');
+      }
+
+      if (!data) {
         throw new Error('Invalid admin credentials');
       }
 
-      const admin = data[0];
-      console.log('✅ Admin authenticated:', admin);
+      // Supabase RPC can return an array or a single object depending on implementation.
+      const admin = Array.isArray(data) ? (data as any)[0] : (data as any);
 
-      // Persist admin login across refresh
+      if (!admin) {
+        // If RPC returned an empty result, surface a helpful message
+        throw new Error('Admin login returned no user. Check RPC implementation.');
+      }
+
+      console.log('✅ Admin authenticated (RPC result):', admin);
+
+      // Persist admin login across refresh. Use admin.email if present, otherwise the supplied email.
       localStorage.setItem('isAdmin', 'true');
-      localStorage.setItem('adminEmail', admin.email);
+      localStorage.setItem('adminEmail', admin.email ?? email);
 
       if (mountedRef.current) {
-        setUser({ id: admin.id, email: admin.email } as any);
+        // We don't rely on a normal Supabase `user` session for admins — leave `user` as null
+        // to avoid mismatched shapes. The `isAdmin` flag controls admin routing.
+        setUser(null);
         setProfile(null);
         setIsAdmin(true);
+      }
+
+      // Attempt to write an audit log for admin login (best-effort)
+      try {
+        await logAdminAction(admin.id ?? admin.email ?? null, 'admin_login', { email: admin.email ?? email, timestamp: new Date().toISOString() });
+      } catch (err) {
+        console.warn('Audit log write failed for admin_login:', err);
       }
     } catch (err) {
       console.error('Admin login failed:', err);
@@ -186,6 +237,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // --- Reset Password ---
+  const resetPassword = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) throw error;
+  };
+
+  // --- Update Password ---
+  const updatePassword = async (password: string) => {
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) throw error;
+  };
+
   const value: AuthContextType = {
     user,
     profile,
@@ -195,7 +260,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signIn,
     signInAsAdmin,
     signOut,
+    resetPassword,
+    updatePassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
+
+export default useAuth;

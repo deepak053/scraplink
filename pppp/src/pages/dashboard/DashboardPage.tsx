@@ -163,7 +163,7 @@ export function DashboardPage() {
           requests.slice(0, 3).forEach(request => {
             const scrapType = request.scrap_listings?.scrap_type || 'scrap';
             let description = '';
-            
+
             if (request.pickup_status === 'pending') {
               description = `Sent pickup request for ${scrapType}`;
             } else if (request.pickup_status === 'accepted') {
@@ -262,6 +262,23 @@ export function DashboardPage() {
                 <div className="ml-4">
                   <h3 className="font-semibold text-gray-900">Find Nearby Scrap</h3>
                   <p className="text-gray-600 text-sm">Browse available listings</p>
+                </div>
+              </div>
+            </Link>
+          )}
+
+          {profile.role === 'recycler' && (
+            <Link
+              to="/my-requests"
+              className="bg-white p-6 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow group"
+            >
+              <div className="flex items-center">
+                <div className="bg-orange-100 p-3 rounded-lg group-hover:bg-orange-200 transition-colors">
+                  <Bell className="h-6 w-6 text-orange-600" />
+                </div>
+                <div className="ml-4">
+                  <h3 className="font-semibold text-gray-900">My Requests</h3>
+                  <p className="text-gray-600 text-sm">Track pickup requests</p>
                 </div>
               </div>
             </Link>
@@ -374,8 +391,8 @@ export function DashboardPage() {
               <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-600">No recent activity</p>
               <p className="text-sm text-gray-500 mt-1">
-                {profile.role === 'seller' 
-                  ? 'Start by creating your first scrap listing' 
+                {profile.role === 'seller'
+                  ? 'Start by creating your first scrap listing'
                   : 'Start by browsing nearby scrap listings'
                 }
               </p>
@@ -385,11 +402,10 @@ export function DashboardPage() {
               {recentActivity.map((activity) => (
                 <div key={activity.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
                   <div className="flex items-center">
-                    <div className={`w-3 h-3 rounded-full mr-3 ${
-                      activity.type === 'listing' ? 'bg-green-500' :
-                      activity.type === 'request' ? 'bg-blue-500' :
-                      'bg-purple-500'
-                    }`} />
+                    <div className={`w-3 h-3 rounded-full mr-3 ${activity.type === 'listing' ? 'bg-green-500' :
+                        activity.type === 'request' ? 'bg-blue-500' :
+                          'bg-purple-500'
+                      }`} />
                     <div>
                       <p className="font-medium text-gray-900">{activity.description}</p>
                       <div className="flex items-center space-x-2">
@@ -397,12 +413,11 @@ export function DashboardPage() {
                           {format(new Date(activity.date), 'MMM dd, yyyy HH:mm')}
                         </p>
                         {activity.status && (
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            activity.status === 'available' || activity.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                            activity.status === 'accepted' ? 'bg-blue-100 text-blue-800' :
-                            activity.status === 'completed' ? 'bg-green-100 text-green-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${activity.status === 'available' || activity.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                              activity.status === 'accepted' ? 'bg-blue-100 text-blue-800' :
+                                activity.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                  'bg-gray-100 text-gray-800'
+                            }`}>
                             {activity.status}
                           </span>
                         )}

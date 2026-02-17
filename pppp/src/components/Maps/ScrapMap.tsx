@@ -17,11 +17,12 @@ const scrapIcon = L.divIcon({
 interface ScrapListing {
   scrap_id: string;
   scrap_type: string;
+  sub_category?: string;
   description: string;
   weight: number;
   estimated_price: number;
   posted_date: string;
-  status: string;
+  status: any;
   latitude: number;
   longitude: number;
   distance?: number;
@@ -45,7 +46,7 @@ export function ScrapMap({ listings, center, onScrapSelect }: ScrapMapProps) {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        
+
         {listings.map((listing) => (
           <Marker
             key={listing.scrap_id}
@@ -64,19 +65,17 @@ export function ScrapMap({ listings, center, onScrapSelect }: ScrapMapProps) {
                     <span className="font-medium">Weight:</span> {listing.weight} kg
                   </div>
                   <div>
-                    <span className="font-medium">Price:</span> ${listing.estimated_price}
                     <span className="font-medium">Price:</span> ₹{listing.estimated_price}
                   </div>
                   <div>
                     <span className="font-medium">Posted:</span> {format(new Date(listing.posted_date), 'MMM dd')}
                   </div>
                   <div>
-                    <span className="font-medium">Status:</span> 
-                    <span className={`ml-1 px-2 py-1 rounded-full text-xs ${
-                      listing.status === 'available' ? 'bg-green-100 text-green-800' :
+                    <span className="font-medium">Status:</span>
+                    <span className={`ml-1 px-2 py-1 rounded-full text-xs ${listing.status === 'available' ? 'bg-green-100 text-green-800' :
                       listing.status === 'accepted' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
+                        'bg-gray-100 text-gray-800'
+                      }`}>
                       {listing.status}
                     </span>
                   </div>

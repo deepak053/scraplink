@@ -26,31 +26,7 @@ CREATE TYPE listing_status AS ENUM ('available', 'accepted', 'completed');
 CREATE TYPE request_status AS ENUM ('pending', 'accepted', 'completed');
 CREATE TYPE transaction_status AS ENUM ('completed', 'cancelled');
 
--- Users table
-CREATE TABLE IF NOT EXISTS users (
-  user_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name text NOT NULL,
-  email text UNIQUE NOT NULL,
-  phone text NOT NULL,
-  role user_role NOT NULL,
-  latitude decimal(10, 7) NOT NULL,
-  longitude decimal(10, 7) NOT NULL,
-  registered_at timestamptz DEFAULT now()
-);
 
--- Scrap listings table
-CREATE TABLE IF NOT EXISTS scrap_listings (
-  scrap_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid REFERENCES users(user_id) ON DELETE CASCADE,
-  scrap_type text NOT NULL,
-  description text NOT NULL,
-  weight decimal(10, 2) NOT NULL CHECK (weight > 0),
-  estimated_price decimal(10, 2) NOT NULL CHECK (estimated_price >= 0),
-  posted_date timestamptz DEFAULT now(),
-  status listing_status DEFAULT 'available',
-  latitude decimal(10, 7) NOT NULL,
-  longitude decimal(10, 7) NOT NULL
-);
 
 -- Pickup requests table
 CREATE TABLE IF NOT EXISTS pickup_requests (

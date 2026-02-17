@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Users, Package, Search, Filter, Eye, MapPin, Phone, Mail, Calendar, DollarSign, User, UserCheck } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Users, Package, Search, Eye, MapPin, Phone, Mail, Calendar, DollarSign, User, UserCheck } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { changeUserRole, deleteUser, updateListingStatus, flagListing } from '../../lib/admin';
+import { exportToCsv } from '../../lib/csvExport';
 import { LoadingSpinner } from '../../components/UI/LoadingSpinner';
 import { format } from 'date-fns';
 import { useAuth } from '../../hooks/useAuth';
@@ -51,7 +53,7 @@ interface ListingStats {
 }
 
 export function AdminActivitiesPage() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, user: authUser } = useAuth();
 
   const [users, setUsers] = useState<User[]>([]);
   const [listings, setListings] = useState<ScrapListing[]>([]);
@@ -280,6 +282,68 @@ export function AdminActivitiesPage() {
     }
   };
 
+  const handleChangeRole = async (u: User, newRole: User['role']) => {
+    if (!confirm(`Change role for ${u.name} to ${newRole}?`)) return;
+    try {
+      await changeUserRole(u.user_id, newRole, authUser?.id);
+      setUsers(prev => prev.map(p => p.user_id === u.user_id ? { ...p, role: newRole } : p));
+      alert('Role updated');
+    } catch (err: any) {
+      console.error('Change role failed', err);
+      alert('Failed to change role: ' + (err?.message || err));
+    }
+  };
+
+  const handleDeleteUser = async (u: User) => {
+    if (!confirm(`Permanently delete user ${u.name}? This cannot be undone.`)) return;
+    try {
+      await deleteUser(u.user_id, authUser?.id);
+      setUsers(prev => prev.filter(p => p.user_id !== u.user_id));
+      alert('User deleted');
+    } catch (err: any) {
+      console.error('Delete user failed', err);
+      alert('Failed to delete user: ' + (err?.message || err));
+    }
+  };
+
+  const handleExportUsers = () => {
+    const rows = filteredUsers.map(u => ({
+      user_id: u.user_id,
+      name: u.name,
+      email: u.email,
+      phone: u.phone,
+      role: u.role,
+      registered_at: u.registered_at,
+      latitude: u.latitude,
+      longitude: u.longitude,
+    }));
+    exportToCsv('users_export.csv', rows as any);
+  };
+
+  const handleUpdateListingStatus = async (listingId: string, status: ScrapListing['status']) => {
+    if (!confirm(`Set listing ${listingId} status to ${status}?`)) return;
+    try {
+      await updateListingStatus(listingId, status, authUser?.id);
+      setListings(prev => prev.map(l => l.scrap_id === listingId ? { ...l, status } : l));
+      alert('Listing status updated');
+    } catch (err: any) {
+      console.error('Update listing status failed', err);
+      alert('Failed to update listing: ' + (err?.message || err));
+    }
+  };
+
+  const handleFlagListing = async (listingId: string) => {
+    const reason = prompt('Reason for flagging this listing:');
+    if (!reason) return;
+    try {
+      await flagListing(listingId, reason, authUser?.id);
+      alert('Listing flagged for review');
+    } catch (err: any) {
+      console.error('Flag listing failed', err);
+      alert('Failed to flag listing: ' + (err?.message || err));
+    }
+  };
+
   const filteredUsers = users.filter(user => {
     const q = searchTerm.trim().toLowerCase();
     const matchesSearch = !q || user.name.toLowerCase().includes(q) || user.email.toLowerCase().includes(q) || user.phone.includes(q);
@@ -414,7 +478,7 @@ export function AdminActivitiesPage() {
                   </div>
                 </div>
                 <div>
-                  <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                  <select aria-label="Filter roles" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     <option value="all">All Roles</option>
                     <option value="seller">Sellers Only</option>
                     <option value="recycler">Recyclers Only</option>
@@ -425,9 +489,14 @@ export function AdminActivitiesPage() {
 
             {/* Users Table */}
             <div className="bg-white rounded-xl shadow-md border border-gray-200">
-              <div className="p-6 border-b border-gray-200">
-                <h2 className="text-2xl font-semibold text-gray-900">All Users ({filteredUsers.length})</h2>
-                <p className="text-gray-600">Complete user directory with detailed information</p>
+              <div className="p-6 border-b border-gray-200 flex items-start justify-between">
+                <div>
+                  <h2 className="text-2xl font-semibold text-gray-900">All Users ({filteredUsers.length})</h2>
+                  <p className="text-gray-600">Complete user directory with detailed information</p>
+                </div>
+                <div>
+                  <button onClick={handleExportUsers} className="bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700">Export CSV</button>
+                </div>
               </div>
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
@@ -438,6 +507,7 @@ export function AdminActivitiesPage() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role & Status</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Registration Date</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -467,6 +537,15 @@ export function AdminActivitiesPage() {
                           <div className="flex items-center text-sm text-gray-500"><MapPin className="h-4 w-4 mr-1" />{(user.latitude ?? 0).toFixed(4)}, {(user.longitude ?? 0).toFixed(4)}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.registered_at ? format(new Date(user.registered_at), 'MMM dd, yyyy HH:mm') : '—'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <div className="flex items-center space-x-2">
+                            <select aria-label={`Change role for ${user.name}`} value={user.role} onChange={(e) => handleChangeRole(user, e.target.value as User['role'])} className="p-1 border border-gray-300 rounded text-sm">
+                              <option value="seller">Seller</option>
+                              <option value="recycler">Recycler</option>
+                            </select>
+                            <button onClick={() => handleDeleteUser(user)} className="text-red-600 hover:text-red-900 text-sm">Delete</button>
+                          </div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -542,7 +621,7 @@ export function AdminActivitiesPage() {
                   </div>
                 </div>
                 <div>
-                  <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                  <select aria-label="Filter listings by status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     <option value="all">All Status</option>
                     <option value="available">Available</option>
                     <option value="accepted">Accepted</option>
@@ -601,6 +680,14 @@ export function AdminActivitiesPage() {
                           <div className="flex items-center text-sm text-gray-500"><MapPin className="h-4 w-4 mr-1" /><div><div>{(Number(listing.latitude) || 0).toFixed(4)}</div><div>{(Number(listing.longitude) || 0).toFixed(4)}</div></div></div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{listing.posted_date ? format(new Date(listing.posted_date), 'MMM dd, yyyy HH:mm') : '—'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <div className="flex items-center space-x-2">
+                            <button onClick={() => handleUpdateListingStatus(listing.scrap_id, 'accepted')} className="text-green-600 text-sm">Accept</button>
+                            <button onClick={() => handleUpdateListingStatus(listing.scrap_id, 'completed')} className="text-purple-600 text-sm">Mark Completed</button>
+                            <button onClick={() => handleUpdateListingStatus(listing.scrap_id, 'available')} className="text-gray-600 text-sm">Make Available</button>
+                            <button onClick={() => handleFlagListing(listing.scrap_id)} className="text-yellow-600 text-sm">Flag</button>
+                          </div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>

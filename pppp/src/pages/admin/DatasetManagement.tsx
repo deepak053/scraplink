@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, FileText, CheckCircle, AlertCircle, Clock, Download, Trash2 } from 'lucide-react';
+import { Upload, FileText, CheckCircle, AlertCircle, Clock, Trash2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { LoadingSpinner } from '../../components/UI/LoadingSpinner';
 import { format } from 'date-fns';
+import { exportToCsv } from '../../lib/csvExport';
 
 interface DatasetUpload {
   upload_id: string;
@@ -29,6 +30,10 @@ export function DatasetManagement() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [processedData, setProcessedData] = useState<any[] | null>(null);
+  const [processing, setProcessing] = useState(false);
+  const [processingCount, setProcessingCount] = useState(0);
+  const [processingTotal, setProcessingTotal] = useState(0);
 
   useEffect(() => {
     fetchData();
@@ -77,10 +82,10 @@ export function DatasetManagement() {
   const processCSVData = (csvText: string): any[] => {
     const lines = csvText.split('\n');
     const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-    
+
     // Expected headers: metal_type, price, date, location, source
     const requiredHeaders = ['metal_type', 'price'];
-    const hasRequiredHeaders = requiredHeaders.every(header => 
+    const hasRequiredHeaders = requiredHeaders.every(header =>
       headers.some(h => h.includes(header.replace('_', '')))
     );
 
@@ -105,22 +110,41 @@ export function DatasetManagement() {
     return data;
   };
 
+  // First step: parse file and show preview. Second step: confirm import which writes to supabase with progress.
   const handleUpload = async () => {
     if (!selectedFile) return;
 
     setUploading(true);
+    setProcessedData(null);
     try {
-      // Read file content
       const fileContent = await selectedFile.text();
-      let processedData: any[] = [];
+      let parsed: any[] = [];
 
-      // Process based on file type
       if (selectedFile.name.endsWith('.csv') || selectedFile.type === 'text/csv') {
-        processedData = processCSVData(fileContent);
-      } else if (selectedFile.type === 'application/json') {
-        processedData = JSON.parse(fileContent);
+        parsed = processCSVData(fileContent);
+      } else if (selectedFile.type === 'application/json' || selectedFile.name.endsWith('.json')) {
+        parsed = JSON.parse(fileContent);
+        if (!Array.isArray(parsed)) parsed = [parsed];
       }
 
+      setProcessedData(parsed);
+      setProcessingTotal(parsed.length);
+      alert(`Parsed ${parsed.length} records. Review preview and click 'Confirm Import' to write to DB.`);
+    } catch (error) {
+      console.error('Error parsing dataset:', error);
+      alert(`Parse failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleConfirmImport = async () => {
+    if (!selectedFile || !processedData) return;
+    if (!confirm(`Import ${processedData.length} records from ${selectedFile.name}?`)) return;
+
+    setProcessing(true);
+    setProcessingCount(0);
+    try {
       // Create upload record
       const { data: uploadRecord, error: uploadError } = await supabase
         .from('dataset_uploads')
@@ -136,15 +160,13 @@ export function DatasetManagement() {
 
       if (uploadError) throw uploadError;
 
-      // Process and insert price data
       let successCount = 0;
-      for (const record of processedData) {
+      for (let i = 0; i < processedData.length; i++) {
+        const record = processedData[i];
         try {
           const metalType = record.metal_type || record.metaltype || record.metal;
           const price = parseFloat(record.price || record.current_price || record.rate);
-          
           if (metalType && !isNaN(price)) {
-            // Update current price
             await supabase
               .from('metal_prices')
               .upsert({
@@ -154,7 +176,6 @@ export function DatasetManagement() {
                 market_location: record.location || record.market || 'India',
               });
 
-            // Add to price history
             await supabase
               .from('price_history')
               .insert({
@@ -167,12 +188,12 @@ export function DatasetManagement() {
 
             successCount++;
           }
-        } catch (error) {
-          console.error('Error processing record:', record, error);
+        } catch (err) {
+          console.error('Error processing record:', err);
         }
+        setProcessingCount(i + 1);
       }
 
-      // Update upload record
       await supabase
         .from('dataset_uploads')
         .update({
@@ -181,14 +202,17 @@ export function DatasetManagement() {
         })
         .eq('upload_id', uploadRecord.upload_id);
 
-      alert(`Successfully processed ${successCount} records from ${selectedFile.name}`);
+      alert(`Imported ${successCount} records successfully.`);
       setSelectedFile(null);
+      setProcessedData(null);
       fetchData();
     } catch (error) {
-      console.error('Error uploading dataset:', error);
-      alert(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('Import failed:', error);
+      alert(`Import failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
-      setUploading(false);
+      setProcessing(false);
+      setProcessingCount(0);
+      setProcessingTotal(0);
     }
   };
 
@@ -230,6 +254,8 @@ export function DatasetManagement() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  const processingPercent = processingTotal ? Math.round((processingCount / processingTotal) * 100) : 0;
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -251,7 +277,7 @@ export function DatasetManagement() {
         {/* Upload Section */}
         <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 mb-8">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Upload New Dataset</h2>
-          
+
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
             <div className="text-center">
               <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -268,32 +294,50 @@ export function DatasetManagement() {
                   />
                 </label>
               </div>
-              
+
               {selectedFile && (
                 <div className="mb-4 p-3 bg-blue-50 rounded-lg">
                   <p className="font-medium text-blue-900">{selectedFile.name}</p>
                   <p className="text-sm text-blue-600">{formatFileSize(selectedFile.size)}</p>
                 </div>
               )}
-              
+
               <p className="text-sm text-gray-600 mb-4">
                 Upload CSV or JSON files with metal price data. Required columns: metal_type, price
               </p>
-              
-              <button
-                onClick={handleUpload}
-                disabled={!selectedFile || uploading}
-                className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center mx-auto"
-              >
-                {uploading ? (
+
+              <div className="flex items-center justify-center space-x-3">
+                <button
+                  onClick={handleUpload}
+                  disabled={!selectedFile || uploading}
+                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                >
+                  {uploading ? (
+                    <>
+                      <LoadingSpinner size="sm" className="mr-2" />
+                      Parsing...
+                    </>
+                  ) : (
+                    'Parse File'
+                  )}
+                </button>
+
+                {processedData && (
                   <>
-                    <LoadingSpinner size="sm" className="mr-2" />
-                    Processing...
+                    <button onClick={handleConfirmImport} disabled={processing} className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">{processing ? `Importing (${processingCount}/${processingTotal})` : 'Confirm Import'}</button>
+                    <button onClick={() => exportToCsv('processed_preview.csv', processedData)} className="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg">Export Preview</button>
                   </>
-                ) : (
-                  'Upload Dataset'
                 )}
-              </button>
+              </div>
+
+              {processing && (
+                <div className="mt-4">
+                  <div className="w-full bg-gray-200 rounded-full h-3">
+                    <div className={`bg-blue-600 h-3 rounded-full w-[${processingPercent}%]`} />
+                  </div>
+                  <p className="text-sm text-gray-600 mt-2">Processing {processingCount} of {processingTotal}</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -318,7 +362,7 @@ export function DatasetManagement() {
         {/* Upload History */}
         <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Upload History</h2>
-          
+
           {uploads.length === 0 ? (
             <div className="text-center py-8">
               <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />

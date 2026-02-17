@@ -1,8 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { Users, Package, TrendingUp, AlertCircle, Calendar, DollarSign, Eye, Search, Filter, Activity, UserCheck, ShoppingCart, Truck, Settings, BarChart3 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Users, Package, TrendingUp, AlertCircle, DollarSign, Search, Activity, UserCheck, Truck, Settings, BarChart3 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { updateTransactionStatus, flagPickupRequest } from '../../lib/admin';
 import { LoadingSpinner } from '../../components/UI/LoadingSpinner';
 import { format } from 'date-fns';
+import { exportToCsv } from '../../lib/csvExport';
+import { sendPickupSlotEmail } from '../../lib/emailService';
 
 interface AdminStats {
   totalUsers: number;
@@ -69,7 +72,10 @@ interface PickupRequest {
   request_id: string;
   request_date: string;
   pickup_status: string;
+  pickup_slot?: string;
+  slot_notified?: boolean;
   scrap_listing: {
+    scrap_id: string;
     scrap_type: string;
     weight: number;
     estimated_price: number;
@@ -95,6 +101,14 @@ interface SystemActivity {
   details?: any;
 }
 
+interface AuditLog {
+  id: string;
+  admin_id?: string | null;
+  action_type: string;
+  details: any;
+  created_at: string;
+}
+
 export function AdminControlPage() {
   const [stats, setStats] = useState<AdminStats>({
     totalUsers: 0,
@@ -113,9 +127,11 @@ export function AdminControlPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [pickupRequests, setPickupRequests] = useState<PickupRequest[]>([]);
   const [systemActivity, setSystemActivity] = useState<SystemActivity[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'sellers' | 'recyclers' | 'listings' | 'transactions' | 'requests' | 'activity'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'sellers' | 'recyclers' | 'listings' | 'transactions' | 'requests' | 'activity' | 'audit'>('overview');
   const [searchTerm, setSearchTerm] = useState('');
+  const [adminPickupSlots, setAdminPickupSlots] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
     fetchAllData();
@@ -132,7 +148,8 @@ export function AdminControlPage() {
         fetchAllUsers(),
         fetchAllTransactions(),
         fetchAllPickupRequests(),
-        fetchSystemActivity()
+        fetchSystemActivity(),
+        fetchAuditLogs()
       ]);
     } catch (error) {
       console.error('Error fetching admin data:', error);
@@ -151,7 +168,7 @@ export function AdminControlPage() {
 
       // Calculate today's registrations
       const today = new Date().toISOString().split('T')[0];
-      const todayRegistrations = users?.filter(u => 
+      const todayRegistrations = users?.filter(u =>
         u.registered_at && u.registered_at.startsWith(today)
       ).length || 0;
 
@@ -282,15 +299,95 @@ export function AdminControlPage() {
         .order('request_date', { ascending: false });
 
       if (error) throw error;
-      
+
       const formattedRequests = (data || []).map(request => ({
         ...request,
         seller: request.scrap_listing?.user,
       }));
-      
+
       setPickupRequests(formattedRequests);
     } catch (error) {
       console.error('Error fetching pickup requests:', error);
+    }
+  };
+
+  const handleUpdateTransactionStatus = async (transactionId: string, status: string) => {
+    if (!confirm(`Set transaction ${transactionId} status to ${status}?`)) return;
+    try {
+      await updateTransactionStatus(transactionId, status, undefined);
+      setTransactions(prev => prev.map(t => t.transaction_id === transactionId ? { ...t, status } : t));
+      alert('Transaction status updated');
+    } catch (err: any) {
+      console.error('Update transaction status failed', err);
+      alert('Failed to update transaction: ' + (err?.message || err));
+    }
+  };
+
+  const handleUpdatePickupStatus = async (requestId: string, status: string) => {
+    let slot = '';
+    if (status === 'accepted') {
+      slot = adminPickupSlots[requestId] || prompt('Enter Pickup Slot for customer:') || '';
+      if (!slot) {
+        alert('Pickup slot is required to accept');
+        return;
+      }
+    }
+
+    if (!confirm(`Set pickup request ${requestId} status to ${status}?`)) return;
+
+    try {
+      const { error } = await supabase
+        .from('pickup_requests')
+        .update({
+          pickup_status: status,
+          ...(slot ? { pickup_slot: slot } : {})
+        })
+        .eq('request_id', requestId);
+
+      if (error) throw error;
+
+      // Send email if accepted
+      if (status === 'accepted') {
+        const request = pickupRequests.find(r => r.request_id === requestId);
+        if (request && request.recycler) {
+          try {
+            await sendPickupSlotEmail({
+              to_email: request.recycler.email,
+              to_name: request.recycler.name || 'Customer',
+              from_name: 'Scrap Link Support',
+              scrap_type: request.scrap_listing?.scrap_type || 'Scrap',
+              weight: request.scrap_listing?.weight || 0,
+              pickup_slot: slot
+            });
+            await supabase.from('pickup_requests').update({ slot_notified: true }).eq('request_id', requestId);
+          } catch (e) {
+            console.error('Admin email notify failed', e);
+          }
+        }
+      }
+
+      setPickupRequests(prev => prev.map(r => r.request_id === requestId ? {
+        ...r,
+        pickup_status: status,
+        ...(slot ? { pickup_slot: slot } : {})
+      } : r));
+
+      alert('Pickup request status updated successfully!');
+    } catch (err: any) {
+      console.error('Update pickup status failed:', err);
+      alert('Failed to update pickup request: ' + (err?.message || err));
+    }
+  };
+
+  const handleFlagPickup = async (requestId: string) => {
+    const reason = prompt('Reason for flagging this pickup request:');
+    if (!reason) return;
+    try {
+      await flagPickupRequest(requestId, reason, undefined);
+      alert('Pickup request flagged');
+    } catch (err: any) {
+      console.error('Flag pickup failed', err);
+      alert('Failed to flag pickup request: ' + (err?.message || err));
     }
   };
 
@@ -412,6 +509,32 @@ export function AdminControlPage() {
     }
   };
 
+  const fetchAuditLogs = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('admin_audit_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (error) throw error;
+      setAuditLogs((data as any[]) || []);
+    } catch (err) {
+      console.error('Error fetching audit logs:', err);
+    }
+  };
+
+  const handleExportAuditLogs = () => {
+    const rows = auditLogs.map(l => ({
+      id: l.id,
+      admin_id: l.admin_id,
+      action_type: l.action_type,
+      details: typeof l.details === 'string' ? l.details : JSON.stringify(l.details),
+      created_at: l.created_at,
+    }));
+    exportToCsv('audit_logs.csv', rows as any);
+  };
+
   const getActivityIcon = (type: string) => {
     switch (type) {
       case 'user_registration': return <UserCheck className="h-4 w-4 text-blue-600" />;
@@ -424,7 +547,7 @@ export function AdminControlPage() {
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
+      user.email.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesSearch;
   });
 
@@ -433,8 +556,8 @@ export function AdminControlPage() {
 
   const filteredListings = listings.filter(listing => {
     const matchesSearch = listing.scrap_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         listing.user?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         listing.description.toLowerCase().includes(searchTerm.toLowerCase());
+      listing.user?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      listing.description.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesSearch;
   });
 
@@ -478,15 +601,15 @@ export function AdminControlPage() {
                 { key: 'transactions', label: 'Transaction History', icon: DollarSign },
                 { key: 'requests', label: 'Pickup Activities', icon: Truck },
                 { key: 'activity', label: 'Live System Feed', icon: Activity },
+                { key: 'audit', label: 'Audit Logs', icon: Settings },
               ].map(({ key, label, icon: Icon }) => (
                 <button
                   key={key}
                   onClick={() => setActiveTab(key as any)}
-                  className={`flex items-center py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === key
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
+                  className={`flex items-center py-4 px-1 border-b-2 font-medium text-sm ${activeTab === key
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
                 >
                   <Icon className="h-5 w-5 mr-2" />
                   {label}
@@ -578,7 +701,7 @@ export function AdminControlPage() {
                     </div>
                     <span className="text-2xl font-bold text-blue-600">{stats.todayRegistrations}</span>
                   </div>
-                  
+
                   <div className="flex items-center justify-between p-4 bg-orange-50 rounded-lg">
                     <div className="flex items-center">
                       <AlertCircle className="h-5 w-5 text-orange-600 mr-3" />
@@ -586,7 +709,7 @@ export function AdminControlPage() {
                     </div>
                     <span className="text-2xl font-bold text-orange-600">{stats.pendingRequests}</span>
                   </div>
-                  
+
                   <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
                     <div className="flex items-center">
                       <Package className="h-5 w-5 text-green-600 mr-3" />
@@ -606,12 +729,12 @@ export function AdminControlPage() {
                       ✓ Online
                     </span>
                   </div>
-                  
+
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">This Week's Activity</span>
                     <span className="text-2xl font-bold text-purple-600">{stats.thisWeekActivity}</span>
                   </div>
-                  
+
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">User Engagement</span>
                     <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
@@ -668,10 +791,10 @@ export function AdminControlPage() {
                         <div className="text-sm text-gray-500">{seller.phone}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {seller.latitude.toFixed(4)}, {seller.longitude.toFixed(4)}
+                        {(seller.latitude ?? 0).toFixed(4)}, {(seller.longitude ?? 0).toFixed(4)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {format(new Date(seller.registered_at), 'MMM dd, yyyy')}
+                        {seller.registered_at ? format(new Date(seller.registered_at), 'MMM dd, yyyy') : '—'}
                       </td>
                     </tr>
                   ))}
@@ -725,10 +848,10 @@ export function AdminControlPage() {
                         <div className="text-sm text-gray-500">{recycler.phone}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {recycler.latitude.toFixed(4)}, {recycler.longitude.toFixed(4)}
+                        {(recycler.latitude ?? 0).toFixed(4)}, {(recycler.longitude ?? 0).toFixed(4)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {format(new Date(recycler.registered_at), 'MMM dd, yyyy')}
+                        {recycler.registered_at ? format(new Date(recycler.registered_at), 'MMM dd, yyyy') : '—'}
                       </td>
                     </tr>
                   ))}
@@ -794,25 +917,24 @@ export function AdminControlPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
-                          ₹{listing.estimated_price.toFixed(2)}
+                          ₹{(Number(listing.estimated_price) || 0).toFixed(2)}
                         </div>
                         <div className="text-sm text-gray-500">
                           {listing.weight} kg
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          listing.status === 'available'
-                            ? 'bg-green-100 text-green-800'
-                            : listing.status === 'accepted'
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${listing.status === 'available'
+                          ? 'bg-green-100 text-green-800'
+                          : listing.status === 'accepted'
                             ? 'bg-yellow-100 text-yellow-800'
                             : 'bg-gray-100 text-gray-800'
-                        }`}>
+                          }`}>
                           {listing.status}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {format(new Date(listing.posted_date), 'MMM dd, yyyy')}
+                        {listing.posted_date ? format(new Date(listing.posted_date), 'MMM dd, yyyy') : '—'}
                       </td>
                     </tr>
                   ))}
@@ -825,9 +947,14 @@ export function AdminControlPage() {
         {/* Transactions Tab */}
         {activeTab === 'transactions' && (
           <div className="bg-white rounded-xl shadow-md border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">All Transactions ({transactions.length})</h2>
-              <p className="text-gray-600">Complete transaction history</p>
+            <div className="p-6 border-b border-gray-200 flex items-start justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">All Transactions ({transactions.length})</h2>
+                <p className="text-gray-600">Complete transaction history</p>
+              </div>
+              <div>
+                <button onClick={() => exportToCsv('transactions.csv', transactions as any)} className="bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700">Export CSV</button>
+              </div>
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
@@ -847,6 +974,9 @@ export function AdminControlPage() {
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Date
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
                     </th>
                   </tr>
                 </thead>
@@ -885,11 +1015,17 @@ export function AdminControlPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-green-600">
-                          ₹{transaction.final_price.toFixed(2)}
+                          ₹{(Number(transaction.final_price) || 0).toFixed(2)}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {format(new Date(transaction.transaction_date), 'MMM dd, yyyy')}
+                        {transaction.transaction_date ? format(new Date(transaction.transaction_date), 'MMM dd, yyyy') : '—'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div className="flex items-center space-x-2">
+                          <button onClick={() => handleUpdateTransactionStatus(transaction.transaction_id, 'completed')} className="text-green-600 text-sm">Mark Completed</button>
+                          <button onClick={() => handleUpdateTransactionStatus(transaction.transaction_id, 'refunded')} className="text-red-600 text-sm">Mark Refunded</button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -902,9 +1038,14 @@ export function AdminControlPage() {
         {/* Pickup Requests Tab */}
         {activeTab === 'requests' && (
           <div className="bg-white rounded-xl shadow-md border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">All Pickup Requests ({pickupRequests.length})</h2>
-              <p className="text-gray-600">All recycler pickup requests</p>
+            <div className="p-6 border-b border-gray-200 flex items-start justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">All Pickup Requests ({pickupRequests.length})</h2>
+                <p className="text-gray-600">All recycler pickup requests</p>
+              </div>
+              <div>
+                <button onClick={() => exportToCsv('pickup_requests.csv', pickupRequests as any)} className="bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700">Export CSV</button>
+              </div>
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
@@ -924,6 +1065,9 @@ export function AdminControlPage() {
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Request Date
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
                     </th>
                   </tr>
                 </thead>
@@ -961,18 +1105,47 @@ export function AdminControlPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          request.pickup_status === 'pending'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : request.pickup_status === 'accepted'
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${request.pickup_status === 'pending'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : request.pickup_status === 'accepted'
                             ? 'bg-blue-100 text-blue-800'
                             : 'bg-green-100 text-green-800'
-                        }`}>
+                          }`}>
                           {request.pickup_status}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {format(new Date(request.request_date), 'MMM dd, yyyy')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div className="space-y-2">
+                          {request.pickup_status === 'pending' && (
+                            <div className="flex flex-col space-y-1">
+                              <input
+                                type="text"
+                                placeholder="Pickup Slot..."
+                                className="text-xs p-1 border border-gray-300 rounded"
+                                value={adminPickupSlots[request.request_id] || ''}
+                                onChange={(e) => setAdminPickupSlots(prev => ({
+                                  ...prev,
+                                  [request.request_id]: e.target.value
+                                }))}
+                              />
+                              <button
+                                onClick={() => handleUpdatePickupStatus(request.request_id, 'accepted')}
+                                className="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700"
+                              >
+                                Submit & Accept
+                              </button>
+                            </div>
+                          )}
+                          <div className="flex items-center space-x-2">
+                            {request.pickup_status === 'accepted' && (
+                              <button onClick={() => handleUpdatePickupStatus(request.request_id, 'completed')} className="text-purple-600 text-sm font-medium">Mark Completed</button>
+                            )}
+                            <button onClick={() => handleFlagPickup(request.request_id)} className="text-yellow-600 text-sm">Flag</button>
+                          </div>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -1005,9 +1178,8 @@ export function AdminControlPage() {
                       <p className="text-sm text-gray-600">
                         <span className="font-medium">{activity.user_name}</span>
                         {activity.user_role !== 'transaction' && (
-                          <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
-                            activity.user_role === 'seller' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
-                          }`}>
+                          <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${activity.user_role === 'seller' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
+                            }`}>
                             {activity.user_role}
                           </span>
                         )}
@@ -1026,6 +1198,41 @@ export function AdminControlPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Audit Logs Tab */}
+        {activeTab === 'audit' && (
+          <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">Admin Audit Logs</h2>
+              <div>
+                <button onClick={handleExportAuditLogs} className="bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700">Export CSV</button>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admin ID</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {auditLogs.map((log) => (
+                    <tr key={log.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{log.created_at ? format(new Date(log.created_at), 'MMM dd, yyyy HH:mm') : '—'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{log.admin_id || 'system'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{log.action_type}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{typeof log.details === 'string' ? log.details : JSON.stringify(log.details)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         )}

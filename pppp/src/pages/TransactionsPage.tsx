@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { TrendingUp, ArrowUpRight, ArrowDownRight, Calendar, User } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
@@ -103,8 +103,8 @@ export function TransactionsPage() {
   const getTotalByType = (type: 'income' | 'expense') => {
     return filteredTransactions.reduce((sum, transaction) => {
       if (transaction.status === 'completed') {
-        const isIncome = profile?.role === 'seller' ? 
-          transaction.seller_id === profile?.user_id : 
+        const isIncome = profile?.role === 'seller' ?
+          transaction.seller_id === profile?.user_id :
           transaction.recycler_id === profile?.user_id;
         if ((type === 'income' && isIncome) || (type === 'expense' && !isIncome)) {
           return sum + transaction.final_price;
@@ -184,11 +184,10 @@ export function TransactionsPage() {
               <button
                 key={key}
                 onClick={() => setFilter(key as any)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  filter === key
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === key
                     ? 'bg-blue-100 text-blue-700'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                }`}
+                  }`}
               >
                 {label}
               </button>
@@ -230,13 +229,13 @@ export function TransactionsPage() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredTransactions.map((transaction) => {
-                    const isSellerTransaction = profile?.role === 'seller' ? 
-                      transaction.seller_id === profile?.user_id : 
+                    const isSellerTransaction = profile?.role === 'seller' ?
+                      transaction.seller_id === profile?.user_id :
                       false;
-                    const isRecyclerTransaction = profile?.role === 'recycler' ? 
-                      transaction.recycler_id === profile?.user_id : 
+                    const isRecyclerTransaction = profile?.role === 'recycler' ?
+                      transaction.recycler_id === profile?.user_id :
                       false;
-                    
+
                     return (
                       <tr key={transaction.transaction_id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -254,14 +253,14 @@ export function TransactionsPage() {
                             <User className="h-4 w-4 text-gray-400 mr-2" />
                             <div>
                               <div className="text-sm font-medium text-gray-900">
-                                {isSellerTransaction ? transaction.recycler_name : 
-                                 isRecyclerTransaction ? transaction.seller_name : 
-                                 'Unknown'}
+                                {isSellerTransaction ? transaction.recycler_name :
+                                  isRecyclerTransaction ? transaction.seller_name :
+                                    'Unknown'}
                               </div>
                               <div className="text-sm text-gray-500">
-                                {isSellerTransaction ? 'Buyer' : 
-                                 isRecyclerTransaction ? 'Seller' : 
-                                 'Unknown'}
+                                {isSellerTransaction ? 'Buyer' :
+                                  isRecyclerTransaction ? 'Seller' :
+                                    'Unknown'}
                               </div>
                             </div>
                           </div>
@@ -273,9 +272,8 @@ export function TransactionsPage() {
                             ) : (
                               <ArrowDownRight className="h-4 w-4 text-red-500 mr-1" />
                             )}
-                            <span className={`text-sm font-medium ${
-                              isSellerTransaction || isRecyclerTransaction ? 'text-green-600' : 'text-red-600'
-                            }`}>
+                            <span className={`text-sm font-medium ${isSellerTransaction || isRecyclerTransaction ? 'text-green-600' : 'text-red-600'
+                              }`}>
                               ₹{transaction.final_price.toFixed(2)}
                             </span>
                           </div>
@@ -284,11 +282,10 @@ export function TransactionsPage() {
                           {format(new Date(transaction.transaction_date), 'MMM dd, yyyy')}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            transaction.status === 'completed'
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${transaction.status === 'completed'
                               ? 'bg-green-100 text-green-800'
                               : 'bg-red-100 text-red-800'
-                          }`}>
+                            }`}>
                             {transaction.status}
                           </span>
                         </td>

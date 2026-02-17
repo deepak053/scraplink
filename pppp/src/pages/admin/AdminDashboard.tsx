@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Package, TrendingUp, AlertCircle, Calendar, DollarSign, Eye, Search, Filter, Activity, UserCheck, ShoppingCart, Truck } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { exportToCsv } from '../../lib/csvExport';
+import { BarChart, LineChart } from '../../components/Admin/SmallCharts';
 import { LoadingSpinner } from '../../components/UI/LoadingSpinner';
 import { format } from 'date-fns';
 
@@ -410,6 +412,41 @@ export function AdminDashboard() {
     }
   };
 
+  const weeklyCounts = () => {
+    try {
+      const days: Record<string, number> = {};
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const key = d.toISOString().split('T')[0];
+        days[key] = 0;
+      }
+      systemActivity.forEach(a => {
+        const key = a.timestamp?.split('T')[0];
+        if (key && days[key] !== undefined) days[key] += 1;
+      });
+      return Object.keys(days).map(k => days[k]);
+    } catch (err) {
+      return [];
+    }
+  };
+
+  const handleExportStats = () => {
+    const rows = [{
+      totalUsers: stats.totalUsers,
+      totalSellers: stats.totalSellers,
+      totalRecyclers: stats.totalRecyclers,
+      totalListings: stats.totalListings,
+      totalTransactions: stats.totalTransactions,
+      totalRevenue: stats.totalRevenue,
+      activeListings: stats.activeListings,
+      pendingRequests: stats.pendingRequests,
+      todayLogins: stats.todayLogins,
+      thisWeekActivity: stats.thisWeekActivity,
+    }];
+    exportToCsv('admin_stats.csv', rows as any);
+  };
+
   const filteredListings = listings.filter(listing => {
     const matchesSearch = listing.scrap_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          listing.user?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -465,6 +502,9 @@ export function AdminDashboard() {
           <p className="text-gray-600 mt-2">
             Complete system management and oversight
           </p>
+        </div>
+        <div className="flex items-center justify-end mb-4">
+          <button onClick={handleExportStats} className="bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700">Export Stats CSV</button>
         </div>
 
         {/* Navigation Tabs */}
@@ -552,7 +592,7 @@ export function AdminDashboard() {
 
             {/* Activity Overview */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-              <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
+                <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">Today's Activity</h2>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
@@ -620,6 +660,19 @@ export function AdminDashboard() {
                 </div>
               </div>
             </div>
+
+            {/* Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-3">User Role Distribution</h3>
+                <BarChart labels={["Sellers", "Recyclers"]} values={[stats.totalSellers, stats.totalRecyclers]} width={380} height={120} />
+              </div>
+              <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-3">Actions in Last 7 Days</h3>
+                <LineChart points={weeklyCounts()} width={420} height={140} />
+              </div>
+            </div>
+            </div>
           </>
         )}
 
@@ -642,10 +695,11 @@ export function AdminDashboard() {
                 </div>
                 {activeTab === 'listings' && (
                   <select
-                    value={filterStatus}
-                    onChange={(e) => setFilterStatus(e.target.value)}
-                    className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
+                      aria-label="Filter dashboard listings by status"
+                      value={filterStatus}
+                      onChange={(e) => setFilterStatus(e.target.value)}
+                      className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
                     <option value="all">All Status</option>
                     <option value="available">Available</option>
                     <option value="accepted">Accepted</option>
@@ -654,6 +708,7 @@ export function AdminDashboard() {
                 )}
                 {activeTab === 'users' && (
                   <select
+                    aria-label="Filter dashboard users by role"
                     value={filterRole}
                     onChange={(e) => setFilterRole(e.target.value)}
                     className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"

@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+// src/pages/auth/RegisterPage.tsx
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import { User, Phone, Mail, Lock, UserCheck, Recycle } from 'lucide-react';
+import { User, Phone, Mail, Lock, Recycle } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { LocationPicker } from '../../components/Maps/LocationPicker';
 import { LoadingSpinner } from '../../components/UI/LoadingSpinner';
+import { sendWelcomeEmail } from '../../lib/emailService';
 
 const schema = yup.object({
   name: yup.string().required('Name is required'),
@@ -53,10 +55,18 @@ export function RegisterPage() {
         latitude: location[0],
         longitude: location[1],
       });
+
+      // Send Welcome Email
+      try {
+        await sendWelcomeEmail(data.email, data.name);
+      } catch (e) {
+        console.warn('Welcome email failed:', e);
+      }
+
       navigate('/dashboard');
     } catch (error: any) {
       let errorMessage = 'Registration failed';
-      
+
       if (error.message) {
         if (error.message.includes('email_address_invalid')) {
           errorMessage = 'This email address is not accepted. Please try a different email address or contact support.';
@@ -68,7 +78,7 @@ export function RegisterPage() {
           errorMessage = error.message;
         }
       }
-      
+
       alert(errorMessage);
     } finally {
       setLoading(false);
@@ -93,15 +103,17 @@ export function RegisterPage() {
 
         <div className="mb-6">
           <div className="flex items-center">
-            <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
-              step >= 1 ? 'bg-green-600 text-white' : 'bg-gray-300'
-            }`}>
+            <div className={`flex items-center justify-center w-8 h-8 rounded-full ${step >= 1 ? 'bg-green-600 text-white' : 'bg-gray-300'
+              }`}>
               1
             </div>
-            <div className={`flex-1 h-1 mx-2 ${step >= 2 ? 'bg-green-600' : 'bg-gray-300'}`} />
-            <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
-              step >= 2 ? 'bg-green-600 text-white' : 'bg-gray-300'
-            }`}>
+            <div
+              className={`flex-1 h-1 mx-2 ${step >= 2 ? 'bg-green-600' : 'bg-gray-300'
+                }`}
+            />
+
+            <div className={`flex items-center justify-center w-8 h-8 rounded-full ${step >= 2 ? 'bg-green-600 text-white' : 'bg-gray-300'
+              }`}>
               2
             </div>
           </div>
@@ -119,12 +131,13 @@ export function RegisterPage() {
                   Full Name
                 </label>
                 <div className="relative">
-                  <User className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                  <User className="absolute left-3 top-3 h-5 w-5 text-gray-400 pointer-events-none" />
                   <input
                     {...register('name')}
                     type="text"
                     className="pl-10 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     placeholder="John Doe"
+                    autoComplete="name"
                   />
                 </div>
                 {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>}
@@ -135,12 +148,13 @@ export function RegisterPage() {
                   Email Address
                 </label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                  <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400 pointer-events-none" />
                   <input
                     {...register('email')}
                     type="email"
                     className="pl-10 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     placeholder="your.email@gmail.com"
+                    autoComplete="email"
                   />
                 </div>
                 {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
@@ -151,12 +165,13 @@ export function RegisterPage() {
                   Phone Number
                 </label>
                 <div className="relative">
-                  <Phone className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                  <Phone className="absolute left-3 top-3 h-5 w-5 text-gray-400 pointer-events-none" />
                   <input
                     {...register('phone')}
                     type="tel"
                     className="pl-10 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     placeholder="+1 (555) 123-4567"
+                    autoComplete="tel"
                   />
                 </div>
                 {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone.message}</p>}
@@ -167,12 +182,13 @@ export function RegisterPage() {
                   Password
                 </label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                  <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400 pointer-events-none" />
                   <input
                     {...register('password')}
                     type="password"
                     className="pl-10 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     placeholder="••••••••"
+                    autoComplete="new-password"
                   />
                 </div>
                 {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>}
@@ -183,12 +199,13 @@ export function RegisterPage() {
                   Confirm Password
                 </label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                  <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400 pointer-events-none" />
                   <input
                     {...register('confirmPassword')}
                     type="password"
                     className="pl-10 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     placeholder="••••••••"
+                    autoComplete="new-password"
                   />
                 </div>
                 {errors.confirmPassword && <p className="text-red-500 text-sm mt-1">{errors.confirmPassword.message}</p>}
@@ -289,3 +306,4 @@ export function RegisterPage() {
     </div>
   );
 }
+

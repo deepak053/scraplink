@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -34,7 +34,7 @@ export function LoginPage() {
       navigate('/dashboard');
     } catch (error: any) {
       let errorMessage = 'Login failed';
-      
+
       if (error.message) {
         if (error.message.includes('email_not_confirmed')) {
           errorMessage = 'Please check your email and click the confirmation link to verify your account before signing in.';
@@ -44,7 +44,7 @@ export function LoginPage() {
           errorMessage = error.message;
         }
       }
-      
+
       alert(errorMessage);
     } finally {
       setLoading(false);
@@ -101,9 +101,9 @@ export function LoginPage() {
               />
               <span className="ml-2 text-sm text-gray-600">Remember me</span>
             </label>
-            <a href="#" className="text-sm text-green-600 hover:text-green-700">
+            <Link to="/forgot-password" className="text-sm text-green-600 hover:text-green-700">
               Forgot password?
-            </a>
+            </Link>
           </div>
 
           <button
